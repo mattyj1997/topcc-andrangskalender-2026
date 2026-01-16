@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TopCC-Andrangskalender</title>
+
+<style>
+body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 20px; }
+h1 { text-align: center; margin: 8px 0 14px 0; }
+
+.btnLike{
+  display: inline-block;
+  padding: 8px 12px;
+  margin-top: 10px;
+  cursor: pointer;
+  background: #e9e9e9;
+  border: 1px solid #bdbdbd;
+  border-radius: 4px;
+  color: black;
+  user-select: none;
+}
+
+.fileHidden{
+  position: absolute;
+  left: -9999px;  /* wichtig: nicht display:none */
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.fileBtnWrap{
+  position: relative;
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.fakeBtn{
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.fileBtnWrap input[type="file"]{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#loginBox {
+  max-width: 420px; margin: 90px auto; background: white; padding: 22px;
+  border-radius: 10px; text-align: center;
+}
+#app { display: none; }
+
+input[type="password"], input[type="date"], input[type="number"], input[type="text"], select {
+  width: 100%; padding: 8px; margin-top: 6px; box-sizing: border-box;
+}
+
+button { padding: 8px 12px; margin-top: 10px; cursor: pointer; }
+
+#topBar {
+  max-width: 750px;
+  margin: 0 auto 10px auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.iconBtn{
+  width:auto;
+  padding: 8px 12px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+#controls { text-align: center; margin-bottom: 12px; }
+#controls button { width: auto; padding: 8px 12px; margin: 0 4px; }
+
+#monthNav {
+  max-width: 750px; margin: 0 auto 12px auto; background: white; border-radius: 8px;
+  padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+
+/* ✅ gleiche Breite für Navigations-Buttons (Desktop) */
+#monthNav button {
+  width: 42px;
+  text-align: center;
+}
+
+#monthTitle { font-weight: bold; }
+
+#calendar { max-width: 750px; margin: 0 auto 30px auto; }
+
+.day {
+  color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px;
+  display: flex; justify-content: space-between; cursor: pointer;
+}
+
+.closed { background: #555; }
+
+.day-left { display: flex; flex-direction: column; gap: 4px; }
+
+.day-right {
+  display: flex;
+  align-items: center;        /* vertikal mittig */
+  justify-content: flex-end;  /* rechts */
+  min-width: 70px;
+  font-weight: bold;
+}
+
+.badge {
+  display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px;
+  background: rgba(255,255,255,0.18); width: fit-content;
+}
+
+label { display: block; margin-top: 10px; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+
+.small-note { font-size: 12px; color: #666; margin-top: 6px; }
+.inline { display:flex; align-items:center; gap:10px; margin-top:6px; }
+.inline input[type="checkbox"]{ width:auto; margin:0; }
+
+/* DARK MODE: nur Hintergrund + Boxen ausser Modal */
+body.dark {
+  background: #121212;
+  color: #e0e0e0;
+}
+body.dark #loginBox {
+  background: #1f1f1f;
+  color: #e0e0e0;
+}
+body.dark #monthNav {
+  background: #1f1f1f;
+}
+
+/* ===== Modal ===== */
+#modalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+#modal{
+  width: 100%;
+  max-width: 750px;
+  background: white;        /* bleibt hell */
+  color: black;
+  border-radius: 10px;
+  padding: 18px 18px 16px 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+
+#modalHeader{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+#modalTitle{
+  font-weight: bold;
+  font-size: 18px;
+}
+
+#closeModalBtn{
+  width: auto;
+  padding: 6px 10px;
+  margin-top: 0;
+}
+
+/* ===== MOBILE VIEW ===== */
+@media (max-width: 700px) {
+
+  body{ padding: 10px; }
+
+  #topBar{ justify-content: space-between; }
+
+  h1{ font-size: 20px; }
+
+  #monthNav{
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  #monthNav > div{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  /* Mobile: Buttons wieder automatisch breit */
+  #monthNav button{
+    width: auto;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .day{
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .day-right{
+    justify-content: flex-start;
+    min-width: auto;
+  }
+
+  .badge{
+    font-size: 11px;
+  }
+
+  #modal{
+    max-width: 100%;
+  }
+
+  .row2{
+    grid-template-columns: 1fr;
+  }
+
+  .actions{
+    grid-template-columns: 1fr;
+  }
+
+  button{
+    font-size: 14px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginBox">
+  <h2>TopCC-Andrangskalender</h2>
+  <p>Bitte Passwort eingeben</p>
+
+  <input type="password" id="loginPw" placeholder="Passwort" autocomplete="off" inputmode="numeric">
+
+  <button id="loginBtn" type="button">Login</button>
+
+  <!-- ✅ Face ID / Passkey Login -->
+  <button id="faceLoginBtn" type="button" style="display:none;">Face ID</button>
+  <button id="faceSetupBtn" type="button" style="display:none;">Face ID einrichten</button>
+
+  <p class="small-note" id="faceHint" style="display:none; margin-top:10px;">
+    Hinweis: Face ID funktioniert hier als Passkey (lokal). Keine Serverprüfung.
+  </p>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="topBar">
+    <button id="toggleDarkBtn" class="iconBtn" type="button" title="Dark Mode">☾</button>
+    <button id="addDayBtn" class="iconBtn" type="button" title="Tag hinzufügen">+</button>
+
+    <!-- ✅ Export/Import -->
+    <button id="exportBtn" type="button">Export</button>
+<button id="copyBtn" type="button">Kopieren</button>
+<button id="pasteBtn" type="button">Einfügen</button>
+
+<span class="fileBtnWrap" title="Import">
+  <button type="button" class="fakeBtn">Import</button>
+  <input id="importFile" type="file" accept=".json,application/json,text/plain,*/*">
+</span>
+
+    <button id="logoutBtn" type="button">Logout</button>
+  </div>
+
+  <h1>TopCC-Andrangskalender</h1>
+
+  <div id="controls">
+    <button type="button" id="btnMonth">Monatsansicht</button>
+    <button type="button" id="btnWeek">Wochenansicht</button>
+  </div>
+
+  <div id="monthNav">
+    <div>
+      <button type="button" id="btnPrev">◀︎</button>
+      <button type="button" id="btnNext">▶︎</button>
+      <button type="button" id="btnToday">Heute</button>
+    </div>
+    <div id="monthTitle"></div>
+    <div style="width:120px;"></div>
+  </div>
+
+  <div id="calendar"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modalOverlay" aria-hidden="true">
+  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div id="modalHeader">
+      <div id="modalTitle">Tag erfassen</div>
+      <button id="closeModalBtn" type="button">✕</button>
+    </div>
+
+    <label>Datum</label>
+    <input type="date" id="date">
+
+    <label>Status</label>
+    <select id="status">
+      <option value="open">Geöffnet</option>
+      <option value="closed">Geschlossen</option>
+    </select>
+
+    <label>Andrang in Prozent (0–100)</label>
+    <select id="percent"></select>
+
+    <div class="row2">
+      <div>
+        <label>Wetter</label>
+        <select id="weather">
+          <option value="n/a">keine Angabe</option>
+          <option value="☀️ sonnig">☀️ sonnig</option>
+          <option value="⛅ teilweise sonnig">⛅ teilweise sonnig</option>
+          <option value="☁️ bewölkt">☁️ bewölkt</option>
+          <option value="🌧️ Regen">🌧️ Regen</option>
+          <option value="⛈️ Gewitter">⛈️ Gewitter</option>
+          <option value="❄️ Schnee">❄️ Schnee</option>
+          <option value="🌬️ Wind">🌬️ Wind</option>
+          <option value="🌫️ Nebel">🌫️ Nebel</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Tageshöchsttemperatur (°C)</label>
+        <input type="number" id="tempMax" placeholder="z. B. 7">
+        <div class="inline">
+          <input type="checkbox" id="tempNA">
+          <label for="tempNA" style="margin:0;">keine Angabe (n/a)</label>
+        </div>
+      </div>
+    </div>
+
+    <label>Öffnungszeiten</label>
+    <input type="text" id="hours" placeholder="z. B. 11:00–19:00">
+
+    <div class="actions">
+      <button type="button" id="btnSave">Speichern</button>
+      <button type="button" id="btnDelete">Löschen</button>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="btnClear">Formular leeren</button>
+      <button type="button" id="btnDeleteAll">Alles löschen</button>
+    </div>
+
+    <div class="small-note">
+      Hinweis: Bei „Geschlossen“ sind Andrang und Öffnungszeiten gesperrt.
+    </div>
+  </div>
+</div>
+
+<script>
+/* PASSWORT */
+const PASSWORD = "7897";
+let loggedIn = false;
+
+/* SYSTEM */
+let viewMode = "month";
+let data = JSON.parse(localStorage.getItem("andrangData")) || {};
+let selectedDate = null;
+let currentMonth = getTodayYM();
+
+/* WebAuthn / Face ID (Passkey) – lokal */
+const PASSKEY_STORAGE_KEY = "andrang_passkey_credential_id_b64url";
+const PASSKEY_USERID_KEY  = "andrang_passkey_userid_b64url";
+
+/* Helpers */
+function $(id){ return document.getElementById(id); }
+function pad2(n){ return String(n).padStart(2,"0"); }
+function todayISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+
+function supportsPasskeys(){
+  return !!(window.PublicKeyCredential && navigator.credentials);
+}
+
+function toBase64Url(bytes){
+  let s = "";
+  bytes.forEach(b => s += String.fromCharCode(b));
+  const b64 = btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/,"");
+  return b64;
+}
+function fromBase64Url(b64url){
+  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((b64url.length + 3) % 4);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+function randomBytes(len){
+  const a = new Uint8Array(len);
+  crypto.getRandomValues(a);
+  return a;
+}
+
+function updateFaceButtons(){
+  if(!supportsPasskeys()){
+    $("faceLoginBtn").style.display = "none";
+    $("faceSetupBtn").style.display = "none";
+    $("faceHint").style.display = "none";
+    return;
+  }
+  const hasCred = !!localStorage.getItem(PASSKEY_STORAGE_KEY);
+  $("faceLoginBtn").style.display = hasCred ? "inline-block" : "none";
+  $("faceSetupBtn").style.display = "inline-block";
+  $("faceHint").style.display = "block";
+}
+
+async function setupFaceID(){
+  try{
+    if(!supportsPasskeys()){
+      alert("Face ID ist auf diesem Browser nicht verfügbar.");
+      return;
+    }
+
+    // Passwort einmalig prüfen (damit nicht jeder einfach eine FaceID einrichtet)
+    const entered = $("loginPw").value.trim();
+    if(entered !== PASSWORD){
+      alert("Bitte zuerst das richtige Passwort eingeben, dann „Face ID einrichten“.");
+      return;
+    }
+
+    const userId = localStorage.getItem(PASSKEY_USERID_KEY) || toBase64Url(randomBytes(32));
+    localStorage.setItem(PASSKEY_USERID_KEY, userId);
+
+    const publicKey = {
+      challenge: randomBytes(32),
+      rp: { name: "TopCC-Andrangskalender" },
+      user: {
+        id: fromBase64Url(userId),
+        name: "matthias",
+        displayName: "Matthias"
+      },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }], // ES256
+      authenticatorSelection: {
+        authenticatorAttachment: "platform",
+        userVerification: "required"
+      },
+      timeout: 60000,
+      attestation: "none"
+    };
+
+    const cred = await navigator.credentials.create({ publicKey });
+    if(!cred){
+      alert("Face ID Einrichtung abgebrochen.");
+      return;
+    }
+
+    const credIdB64Url = toBase64Url(new Uint8Array(cred.rawId));
+    localStorage.setItem(PASSKEY_STORAGE_KEY, credIdB64Url);
+
+    updateFaceButtons();
+    alert("Face ID wurde eingerichtet. Du kannst dich künftig damit einloggen.");
+  } catch(err){
+    alert("Face ID Einrichtung fehlgeschlagen: " + (err?.message || "Unbekannter Fehler"));
+  }
+}
+
+async function loginWithFaceID(){
+  try{
+    if(!supportsPasskeys()){
+      alert("Face ID ist auf diesem Browser nicht verfügbar.");
+      return;
+    }
+
+    const credId = localStorage.getItem(PASSKEY_STORAGE_KEY);
+    if(!credId){
+      alert("Noch keine Face ID eingerichtet. Bitte zuerst „Face ID einrichten“.");
+      return;
+    }
+
+    const publicKey = {
+      challenge: randomBytes(32),
+      allowCredentials: [{
+        type: "public-key",
+        id: fromBase64Url(credId),
+      }],
+      userVerification: "required",
+      timeout: 60000
+    };
+
+    const assertion = await navigator.credentials.get({ publicKey });
+    if(!assertion){
+      alert("Face ID Login abgebrochen.");
+      return;
+    }
+
+    // Kein Server: wir werten ein erfolgreiches WebAuthn-Get als „ok“ für dieses lokale Tool
+    loggedIn = true;
+    $("loginBox").style.display = "none";
+    $("app").style.display = "block";
+    toggleFields();
+    toggleTempNA();
+    render();
+  } catch(err){
+    alert("Face ID Login fehlgeschlagen: " + (err?.message || "Unbekannter Fehler"));
+  }
+}
+
+/* Prozent-Auswahl */
+function populatePercentSelect(){
+  const sel = $("percent");
+  sel.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Bitte wählen";
+  sel.appendChild(placeholder);
+
+  for(let p=0; p<=100; p+=5){
+    const o = document.createElement("option");
+    o.value = String(p);
+    o.textContent = `${p}%`;
+    sel.appendChild(o);
+  }
+}
+
+/* Monat / Titel */
+function getTodayYM(){
+  const n = new Date();
+  return `${n.getFullYear()}-${pad2(n.getMonth()+1)}`;
+}
+function ymFromDateStr(d){ return d.slice(0,7); }
+function monthTitleFromYM(ym){
+  const [y,m]=ym.split("-").map(Number);
+  return new Date(y,m-1,1).toLocaleDateString("de-DE",{month:"long",year:"numeric"});
+}
+function addMonthsToYM(ym,delta){
+  const [y,m]=ym.split("-").map(Number);
+  const d=new Date(y,m-1,1);
+  d.setMonth(d.getMonth()+delta);
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+}
+
+/* Datumsformat */
+function baseDateGerman(ds){
+  return new Date(ds+"T00:00:00").toLocaleDateString("de-DE",{
+    weekday:"long", day:"numeric", month:"long", year:"numeric"
+  });
+}
+
+/* Farbverlauf (dunkelgrün -> hellgelb -> satteres rot) */
+function getColor(p){
+  p = Number(p);
+  if (Number.isNaN(p)) p = 0;
+
+  const hue = 120 - (p * 1.2);        // grün -> gelb -> rot
+  const lightness = 35 + (p * 0.22);  // 0% dunkel, 100% etwas heller
+  return `hsl(${hue}, 95%, ${lightness}%)`;
+}
+
+/* ===== Feiertage (breit, kantonal gemischt) ===== */
+function easterSundayUTC(year){
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(Date.UTC(year, month - 1, day));
+}
+function toISO(dateObj){
+  const y = dateObj.getUTCFullYear();
+  const mo = pad2(dateObj.getUTCMonth()+1);
+  const da = pad2(dateObj.getUTCDate());
+  return `${y}-${mo}-${da}`;
+}
+function nthWeekdayOfMonth(year, monthIndex, weekday, n){
+  const first = new Date(year, monthIndex, 1);
+  const firstW = first.getDay();
+  const offset = (weekday - firstW + 7) % 7;
+  const day = 1 + offset + (n-1)*7;
+  return new Date(year, monthIndex, day);
+}
+function thirdSundaySeptember(year){ return nthWeekdayOfMonth(year, 8, 0, 3); }
+function firstSundaySeptember(year){ return nthWeekdayOfMonth(year, 8, 0, 1); }
+function genevaFastThursday(year){
+  const fs = firstSundaySeptember(year);
+  const th = new Date(fs);
+  th.setDate(fs.getDate() + 4);
+  return th;
+}
+
+function holidayName(dateStr){
+  const year = Number(dateStr.slice(0,4));
+  const mmdd = dateStr.slice(5);
+
+  const fixed = {
+    "01-01":"Neujahr",
+    "01-02":"Berchtoldstag",
+    "01-06":"Heilige Drei Könige",
+    "03-19":"Josefstag",
+    "05-01":"Tag der Arbeit",
+    "08-01":"Nationalfeiertag",
+    "08-15":"Mariä Himmelfahrt",
+    "11-01":"Allerheiligen",
+    "12-08":"Mariä Empfängnis",
+    "12-25":"Weihnachten",
+    "12-26":"Stephanstag",
+    "12-31":"Silvester"
+  };
+  if (fixed[mmdd]) return fixed[mmdd];
+
+  const easter = easterSundayUTC(year);
+  const goodFriday = new Date(easter); goodFriday.setUTCDate(easter.getUTCDate() - 2);
+  const easterMon  = new Date(easter); easterMon.setUTCDate(easter.getUTCDate() + 1);
+  const ascension  = new Date(easter); ascension.setUTCDate(easter.getUTCDate() + 39);
+  const whitMon    = new Date(easter); whitMon.setUTCDate(easter.getUTCDate() + 50);
+  const corpus     = new Date(easter); corpus.setUTCDate(easter.getUTCDate() + 60);
+
+  if (dateStr === toISO(goodFriday)) return "Karfreitag";
+  if (dateStr === toISO(easterMon))  return "Ostermontag";
+  if (dateStr === toISO(ascension))  return "Auffahrt";
+  if (dateStr === toISO(whitMon))    return "Pfingstmontag";
+  if (dateStr === toISO(corpus))     return "Fronleichnam";
+
+  const bettag = thirdSundaySeptember(year);
+  const bettagISO = `${bettag.getFullYear()}-${pad2(bettag.getMonth()+1)}-${pad2(bettag.getDate())}`;
+  const bettagMon = new Date(bettag); bettagMon.setDate(bettag.getDate() + 1);
+  const bettagMonISO = `${bettagMon.getFullYear()}-${pad2(bettagMon.getMonth()+1)}-${pad2(bettagMon.getDate())}`;
+
+  if (dateStr === bettagISO) return "Eidg. Dank-, Buss- und Bettag";
+  if (dateStr === bettagMonISO) return "Bettagsmontag";
+
+  const geneva = genevaFastThursday(year);
+  const genevaISO = `${geneva.getFullYear()}-${pad2(geneva.getMonth()+1)}-${pad2(geneva.getDate())}`;
+  if (dateStr === genevaISO) return "Genfer Bettag";
+
+  return "";
+}
+
+function formatDateGermanWithHoliday(ds){
+  const h = holidayName(ds);
+  return h ? `${baseDateGerman(ds)} (${h})` : baseDateGerman(ds);
+}
+
+/* ===== Modal ===== */
+function openModal(titleText){
+  $("modalTitle").textContent = titleText;
+  $("modalOverlay").style.display = "flex";
+  $("modalOverlay").setAttribute("aria-hidden","false");
+  setTimeout(()=>{ $("date").focus(); }, 0);
+}
+function closeModal(){
+  $("modalOverlay").style.display = "none";
+  $("modalOverlay").setAttribute("aria-hidden","true");
+}
+
+/* Klick ausserhalb schliesst */
+$("modalOverlay").addEventListener("click", (e)=>{
+  if(e.target === $("modalOverlay")) closeModal();
+});
+/* ESC schliesst */
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape" && $("modalOverlay").style.display === "flex") closeModal();
+});
+
+/* ===== Felder sperren ===== */
+function toggleFields(){
+  const isClosed = $("status").value === "closed";
+  const percent = $("percent");
+  const hours   = $("hours");
+
+  percent.disabled = isClosed;
+  hours.disabled   = isClosed;
+
+  percent.readOnly = isClosed;
+  hours.readOnly   = isClosed;
+
+  if(isClosed){
+    percent.value = "";
+    hours.value = "";
+  }
+}
+
+/* ===== Temperatur n/a ===== */
+function toggleTempNA(){
+  const na = $("tempNA").checked;
+  $("tempMax").disabled = na;
+  $("tempMax").readOnly = na;
+  if (na) $("tempMax").value = "";
+}
+
+/* ===== Login / Logout ===== */
+/* ✅ Fix 1: trim() gegen unsichtbare Zeichen auf iPhone */
+function login(){
+  const entered = $("loginPw").value.trim();
+  if (entered === PASSWORD){
+    loggedIn = true;
+    $("loginBox").style.display = "none";
+    $("app").style.display = "block";
+    toggleFields();
+    toggleTempNA();
+    render();
+  } else {
+    alert("Falsches Passwort");
+  }
+}
+function logout(){
+  loggedIn = false;
+  $("loginPw").value = "";
+  $("app").style.display = "none";
+  $("loginBox").style.display = "block";
+  closeModal();
+}
+
+/* Enter-Login */
+$("loginPw").addEventListener("keydown", (e)=>{ if(e.key==="Enter") login(); });
+
+/* ===== Views / Navigation ===== */
+function setView(m){ viewMode=m; render(); }
+function prevMonth(){ currentMonth = addMonthsToYM(currentMonth,-1); render(); }
+function nextMonth(){ currentMonth = addMonthsToYM(currentMonth, 1); render(); }
+function goToTodayMonth(){ currentMonth = getTodayYM(); render(); }
+
+/* ===== Filter ===== */
+function filterDates(arr){
+  if(viewMode === "month") return arr.filter(d => d.startsWith(currentMonth));
+
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - day);
+  monday.setHours(0,0,0,0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23,59,59,999);
+
+  return arr.filter(d => {
+    const dt = new Date(d + "T00:00:00");
+    return dt >= monday && dt <= sunday;
+  });
+}
+
+/* ===== CRUD ===== */
+function clearForm(){
+  selectedDate = null;
+  $("date").value = "";
+  $("status").value = "open";
+  $("percent").value = "";
+  $("hours").value = "";
+  $("tempMax").value = "";
+  $("tempNA").checked = false;
+  $("weather").value = "n/a";
+  toggleTempNA();
+  toggleFields();
+}
+
+function openNewDay(){
+  clearForm();
+  $("date").value = todayISO();
+  currentMonth = ymFromDateStr($("date").value);
+  render();
+  openModal("Tag hinzufügen");
+}
+
+function editDay(d){
+  const e = data[d];
+  selectedDate = d;
+
+  $("date").value = d;
+  $("status").value = e.status || "open";
+  $("weather").value = e.weather || "n/a";
+
+  if (e.tempMax === "n/a") {
+    $("tempNA").checked = true;
+    $("tempMax").value = "";
+  } else {
+    $("tempNA").checked = false;
+    $("tempMax").value = (e.tempMax && e.tempMax !== "n/a") ? e.tempMax : "";
+  }
+  toggleTempNA();
+
+  toggleFields();
+
+  if(($("status").value) === "open"){
+    $("percent").value = e.percent || "";
+    $("hours").value = e.hours || "";
+  } else {
+    $("percent").value = "";
+    $("hours").value = "";
+  }
+
+  currentMonth = ymFromDateStr(d);
+  render();
+  openModal("Tag bearbeiten");
+}
+
+function saveDay(){
+  if(!loggedIn) return;
+
+  const d = $("date").value;
+  if(!d){ alert("Bitte Datum wählen."); return; }
+
+  const st = $("status").value;
+
+  if(st === "open"){
+    const pv = $("percent").value;
+    if(pv === ""){
+      alert("Bitte Andrang auswählen (0–100).");
+      return;
+    }
+    const pNum = Number(pv);
+    if(Number.isNaN(pNum) || pNum < 0 || pNum > 100 || (pNum % 5 !== 0)){
+      alert("Andrang muss zwischen 0 und 100 liegen.");
+      return;
+    }
+  }
+
+  const savedPercent = (st === "closed") ? "" : $("percent").value;
+  const savedHours   = (st === "closed") ? "" : ($("hours").value || "");
+
+  const w = $("weather").value || "n/a";
+
+  let t = "";
+  if ($("tempNA").checked) t = "n/a";
+  else if ($("tempMax").value !== "") t = String(Number($("tempMax").value));
+
+  data[d] = {
+    status: st,
+    percent: savedPercent,
+    weather: w,
+    hours: savedHours,
+    tempMax: t
+  };
+
+  localStorage.setItem("andrangData", JSON.stringify(data));
+  selectedDate = d;
+  currentMonth = ymFromDateStr(d);
+
+  toggleFields();
+  render();
+  closeModal();
+}
+
+function deleteDay(){
+  if(!loggedIn) return;
+
+  const d = selectedDate || $("date").value;
+  if(!d || !data[d]){ alert("Bitte zuerst einen Eintrag auswählen."); return; }
+
+  if(!confirm("Eintrag löschen?")) return;
+
+  delete data[d];
+  localStorage.setItem("andrangData", JSON.stringify(data));
+  clearForm();
+  render();
+  closeModal();
+}
+
+function deleteAll(){
+  if(!loggedIn) return;
+  if(!confirm("Wirklich alles löschen?")) return;
+
+  data = {};
+  localStorage.removeItem("andrangData");
+  clearForm();
+  render();
+  closeModal();
+}
+
+/* ===== Render ===== */
+function render(){
+  if(!loggedIn) return;
+
+  $("monthNav").style.display = (viewMode === "month") ? "flex" : "none";
+  if(viewMode === "month"){
+    $("monthTitle").innerText = monthTitleFromYM(currentMonth);
+  } else {
+    $("monthTitle").innerText = "Aktuelle Woche";
+  }
+
+  const cal = $("calendar");
+  cal.innerHTML = "";
+
+  const allDatesAsc = Object.keys(data).sort((a,b)=>a.localeCompare(b));
+  const dates = filterDates(allDatesAsc);
+
+  if(dates.length === 0){
+    cal.innerHTML = `<div style="color:#555;max-width:750px;margin:0 auto;">Keine Einträge in dieser Ansicht.</div>`;
+    return;
+  }
+
+  dates.forEach(d=>{
+    const e = data[d];
+
+    const weatherText = (e.weather === "n/a" || !e.weather) ? "n/a" : e.weather;
+
+    let tempText = "";
+    if (e.tempMax === "n/a") tempText = "n/a";
+    else if (e.tempMax) tempText = `${e.tempMax}°C`;
+
+    const parts = [];
+    if(e.status === "closed"){
+      parts.push("Geschlossen");
+    } else {
+      if(e.hours) parts.push(e.hours);
+    }
+    parts.push(weatherText);
+    if(tempText) parts.push(tempText);
+
+    const info = parts.join(" | ");
+
+    if(e.status === "closed"){
+      cal.innerHTML += `
+      <div class="day closed" onclick="editDay('${d}')">
+        <div class="day-left">
+          <strong>${formatDateGermanWithHoliday(d)}</strong>
+          <span class="badge">${info}</span>
+        </div>
+        <div class="day-right">🔒</div>
+      </div>`;
+    } else {
+      const pNum = Number(e.percent);
+      const useBlack = (!Number.isNaN(pNum) && pNum >= 35 && pNum <= 60);
+
+      cal.innerHTML += `
+      <div class="day"
+           style="background:${getColor(e.percent)}; color:${useBlack ? 'black' : 'white'}"
+           onclick="editDay('${d}')">
+        <div class="day-left">
+          <strong>${formatDateGermanWithHoliday(d)}</strong>
+          <span class="badge">${info}</span>
+        </div>
+        <div class="day-right">${e.percent}%</div>
+      </div>`;
+    }
+  });
+}
+
+/* ===== Dark Mode ===== */
+function applyDarkMode(on){
+  if(on){
+    document.body.classList.add("dark");
+    localStorage.setItem("darkMode","on");
+  } else {
+    document.body.classList.remove("dark");
+    localStorage.setItem("darkMode","off");
+  }
+}
+function toggleDarkMode(){
+  applyDarkMode(!document.body.classList.contains("dark"));
+}
+
+/* ===== Export / Import ===== */
+function exportData(){
+  if(!loggedIn) return;
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: data
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "andrangData.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+async function copyData(){
+  if(!loggedIn) return;
+
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: data
+  };
+
+  const txt = JSON.stringify(payload);
+
+  try{
+    await navigator.clipboard.writeText(txt);
+    alert("Daten kopiert. Du kannst sie jetzt z. B. in Notizen speichern.");
+  } catch {
+    prompt("Kopiere diesen Text:", txt);
+  }
+}
+
+async function pasteData(){
+  if(!loggedIn) return;
+
+  let txt = "";
+  try{
+    txt = await navigator.clipboard.readText();
+  } catch {
+    txt = prompt("Füge hier den kopierten Text ein:");
+  }
+
+  if(!txt || !txt.trim()){
+    alert("Kein Text gefunden.");
+    return;
+  }
+
+  try{
+    const obj = JSON.parse(txt);
+    const incoming = (obj && obj.data) ? obj.data : obj;
+
+    if(!incoming || typeof incoming !== "object"){
+      alert("Falsches Format.");
+      return;
+    }
+
+    if(!confirm("Einfügen überschreibt deinen aktuellen Stand. Fortfahren?")) return;
+
+    data = incoming;
+    localStorage.setItem("andrangData", JSON.stringify(data));
+    render();
+    alert("Einfügen erfolgreich.");
+  } catch(e){
+    alert("Ungültiger Inhalt.");
+  }
+}
+
+/* ✅ Fix 2: Import stabiler auf iPhone (file.text()) + bessere Fehlermeldungen */
+async function importDataFromFile(file){
+  try{
+    // Debug-Hinweis (hilft sofort zu sehen ob iOS "leer" liefert)
+    // alert(`Datei: ${file.name}\nTyp: ${file.type || "unbekannt"}\nGrösse: ${file.size} Bytes`);
+
+    let txt = "";
+    try{
+      txt = await file.text();
+    } catch {
+      // iOS-Fallback
+      txt = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result || ""));
+        r.onerror = () => reject(new Error("FileReader konnte Datei nicht lesen."));
+        r.readAsText(file);
+      });
+    }
+
+    if(!txt || !txt.trim()){
+      alert("Import fehlgeschlagen: Datei ist leer oder iOS konnte sie nicht lesen. (Tipp: Datei in Dateien-App erst herunterladen, Wolke entfernen.)");
+      return;
+    }
+
+    const obj = JSON.parse(txt);
+    const incoming = (obj && typeof obj === "object" && obj.data && typeof obj.data === "object")
+      ? obj.data
+      : obj;
+
+    if(!incoming || typeof incoming !== "object" || Array.isArray(incoming)){
+      alert("Import fehlgeschlagen: Falsches Format.");
+      return;
+    }
+
+    if(!confirm("Import überschreibt deinen aktuellen Stand auf diesem Gerät. Fortfahren?")) return;
+
+    data = incoming;
+    localStorage.setItem("andrangData", JSON.stringify(data));
+    render();
+    alert("Import erfolgreich.");
+  } catch(err){
+    alert("Import fehlgeschlagen: " + (err?.message || "Unbekannter Fehler"));
+  }
+}
+
+/* ===== Wire up ===== */
+populatePercentSelect();
+updateFaceButtons();
+
+/* Buttons */
+$("loginBtn").addEventListener("click", login);
+$("faceSetupBtn").addEventListener("click", setupFaceID);
+$("faceLoginBtn").addEventListener("click", loginWithFaceID);
+
+$("logoutBtn").addEventListener("click", logout);
+
+$("btnMonth").addEventListener("click", ()=>setView("month"));
+$("btnWeek").addEventListener("click", ()=>setView("week"));
+
+$("btnPrev").addEventListener("click", prevMonth);
+$("btnNext").addEventListener("click", nextMonth);
+$("btnToday").addEventListener("click", goToTodayMonth);
+
+$("status").addEventListener("change", toggleFields);
+$("tempNA").addEventListener("change", toggleTempNA);
+
+$("btnSave").addEventListener("click", saveDay);
+$("btnDelete").addEventListener("click", deleteDay);
+$("btnClear").addEventListener("click", clearForm);
+$("btnDeleteAll").addEventListener("click", deleteAll);
+
+$("closeModalBtn").addEventListener("click", closeModal);
+
+$("toggleDarkBtn").addEventListener("click", toggleDarkMode);
+$("addDayBtn").addEventListener("click", openNewDay);
+
+/* Export/Import */
+$("exportBtn").addEventListener("click", exportData);
+$("copyBtn").addEventListener("click", copyData);
+$("pasteBtn").addEventListener("click", pasteData);
+$("importFile").addEventListener("change", async (e)=>{
+  const f = e.target.files && e.target.files[0];
+  if(f) await importDataFromFile(f);
+  e.target.value = "";
+});
+
+/* Dark Mode Zustand laden */
+if(localStorage.getItem("darkMode")==="on"){
+  document.body.classList.add("dark");
+}
+
+/* initial */
+toggleFields();
+toggleTempNA();
+</script>
+
+</body>
+</html>
